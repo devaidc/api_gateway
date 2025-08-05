@@ -1,0 +1,124 @@
+version: '3.8'
+
+services:
+  kong:
+    image: kong:3.6
+    container_name: kong
+    restart: unless-stopped
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: host.docker.internal
+      KONG_PG_PORT: 5433
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: 1234
+      KONG_PG_DATABASE: kong
+      KONG_LOG_LEVEL: debug
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    networks:
+      - monitor
+
+  kong-migrations:
+    image: kong:3.6
+    container_name: kong-migrations
+    depends_on:
+      - kong
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      kong migrations bootstrap && kong migrations up && kong migrations finish
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: host.docker.internal
+      KONG_PG_PORT: 5433
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: 1234
+      KONG_PG_DATABASE: kong
+    networks:
+      - monitor
+
+  konga:
+    image: pantsel/konga
+    container_name: konga
+    restart: unless-stopped
+    ports:
+      - "1337:1337"
+    volumes:
+      - konga-storage:/app/kongadata
+    environment:
+      NODE_ENV: production
+    networks:
+      - monitor
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    networks:
+      - monitor
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - monitor
+
+  node_exporter:
+    image: prom/node-exporter
+    container_name: node_exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    networks:
+      - monitor
+  
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml
+      - ./loki-data:/loki
+    restart: unless-stopped
+    networks:
+      - monitor
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: promtail
+    volumes:
+      - /var/log:/var/log           # adjust for your host logs if needed
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /etc/machine-id:/etc/machine-id:ro
+      - /etc/hostname:/etc/hostname:ro
+      - /etc/localtime:/etc/localtime:ro
+      - ./promtail-config.yaml:/etc/promtail/config.yaml
+       - ./app.log:/var/log/echo-api/app.log
+    command: -config.file=/etc/promtail/config.yaml
+    depends_on:
+      - loki
+    restart: unless-stopped
+    networks:
+      - monitor
+
+networks:
+  monitor:
+    driver: bridge
