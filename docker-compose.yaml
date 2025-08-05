@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     environment:
       KONG_DATABASE: postgres
-      KONG_PG_HOST: host.docker.internal
+      KONG_PG_HOST: postgres  # Change this to the PostgreSQL service name
       KONG_PG_PORT: 5433
       KONG_PG_USER: kong
       KONG_PG_PASSWORD: 1234
@@ -23,6 +23,8 @@ services:
       - "8001:8001"
     networks:
       - monitor
+    depends_on:
+      - postgres
 
   kong-migrations:
     image: kong:3.6
@@ -34,7 +36,7 @@ services:
       kong migrations bootstrap && kong migrations up && kong migrations finish
     environment:
       KONG_DATABASE: postgres
-      KONG_PG_HOST: host.docker.internal
+      KONG_PG_HOST: postgres  # Change this to the PostgreSQL service name
       KONG_PG_PORT: 5433
       KONG_PG_USER: kong
       KONG_PG_PASSWORD: 1234
@@ -87,7 +89,7 @@ services:
       - "9100:9100"
     networks:
       - monitor
-  
+
   loki:
     image: grafana/loki:2.9.0
     container_name: loki
@@ -119,10 +121,26 @@ services:
     networks:
       - monitor
 
+  postgres:
+    image: postgres:13  # You can change this to the version you prefer
+    container_name: postgres
+    environment:
+      POSTGRES_USER: kong
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: kong
+    ports:
+      - "5433:5432"  # Map the container port 5432 to host port 5433
+    volumes:
+      - postgres-data:/var/lib/postgresql/data  # Persist PostgreSQL data
+    networks:
+      - monitor
+    restart: unless-stopped
+
 networks:
   monitor:
-    driver: bridge
+    driver: bridge  # Define the 'monitor' network
 
 volumes:
   konga-storage:   # Persistent volume for Konga data
   grafana-storage: # Persistent volume for Grafana data
+  postgres-data:   # Persistent volume for PostgreSQL data
