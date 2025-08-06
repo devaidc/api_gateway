@@ -96,13 +96,12 @@ services:
     container_name: loki
     ports:
       - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
     volumes:
       - ./loki-config.yaml:/etc/loki/local-config.yaml
-      - ./loki-data:/loki
+      - loki-data-volume:/loki  # Use the Docker volume
+    environment:
+      - CONFIG_FILE=/etc/loki/local-config.yaml
     restart: unless-stopped
-    networks:
-      - monitor
 
   promtail:
     image: grafana/promtail:2.9.0
@@ -145,3 +144,4 @@ volumes:
   konga-storage:   # Persistent volume for Konga data
   grafana-storage: # Persistent volume for Grafana data
   postgres-data:   # Persistent volume for PostgreSQL data
+  loki-data-volume:  # Ensure the volume is defined here
