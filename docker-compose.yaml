@@ -8,7 +8,7 @@ services:
     environment:
       KONG_DATABASE: postgres
       KONG_PG_HOST: postgres  # Change this to the PostgreSQL service name
-      KONG_PG_PORT: 5433
+      KONG_PG_PORT: 5432
       KONG_PG_USER: kong
       KONG_PG_PASSWORD: 1234
       KONG_PG_DATABASE: kong
@@ -37,7 +37,7 @@ services:
     environment:
       KONG_DATABASE: postgres
       KONG_PG_HOST: postgres  # Change this to the PostgreSQL service name
-      KONG_PG_PORT: 5433
+      KONG_PG_PORT: 5432
       KONG_PG_USER: kong
       KONG_PG_PASSWORD: 1234
       KONG_PG_DATABASE: kong
@@ -129,7 +129,7 @@ services:
       POSTGRES_PASSWORD: 1234
       POSTGRES_DB: kong
     ports:
-      - "5433:5432"  # Map the container port 5432 to host port 5433
+      - "5432:5432"  # Map the container port 5432 to host port 5432
     volumes:
       - postgres-data:/var/lib/postgresql/data  # Persist PostgreSQL data
     networks:
