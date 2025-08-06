@@ -36,13 +36,14 @@ services:
       kong migrations bootstrap && kong migrations up && kong migrations finish
     environment:
       KONG_DATABASE: postgres
-      KONG_PG_HOST: postgres  # Change this to the PostgreSQL service name
+      KONG_PG_HOST: postgres  # Ensure PostgreSQL service name is correct
       KONG_PG_PORT: 5432
       KONG_PG_USER: kong
       KONG_PG_PASSWORD: 1234
       KONG_PG_DATABASE: kong
     networks:
       - monitor
+
 
   konga:
     image: pantsel/konga
